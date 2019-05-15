@@ -134,7 +134,7 @@ config.video <- {
 	height = config.container.height,
 	trigger = Transition.EndNavigation,
 };
-	if (!toBool(userConfig["videoAudio"])) config.video.video_flags = Vid.NoAudio;
+	if (!toBool(userConfig["videoAudio"])) config.video.video_flags <- Vid.NoAudio;
 
 config.logo <- {
 	padding = per(4, config.container.width),
