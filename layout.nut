@@ -19,7 +19,7 @@ local userConfig = {
 
 class UserConfig {
 	</ label=userConfig.prefix + "GENERAL" + userConfig.postfix,
-		help="mvscomplete Layout",
+		help="PICKnMIX layout",
 		order=userConfig.order++ />
 	general="";
 
@@ -55,27 +55,6 @@ class UserConfig {
 			order=userConfig.order++ />
 		logoLabel="wheel";
 
-	</ label=userConfig.prefix + "OSD" + userConfig.postfix,
-		help="mvscomplete Layout",
-		order=userConfig.order++ />
-	osd="";
-
-		</ label="Clock Delay",
-			help="Delay (milliseconds) when the On Screen Display disappears.",
-			order=userConfig.order++ />
-		osdClockDelay="2000";
-
-		</ label="Effect Type",
-			help="Effect type when the On Screen Display disappears.",
-			options="collapse, compress, fade, shrink, disappear",
-			order=userConfig.order++ />
-		osdEffectType="disappear";
-
-		</ label="Effect Duration",
-			help="Effect duration (milliseconds) when the On Screen Display disappears.",
-			order=userConfig.order++ />
-		osdEffectDuration="200";
-
 	</ label=userConfig.prefix + "SHADERS" + userConfig.postfix,
 		order=userConfig.order++ />
 	shaders="";
@@ -91,6 +70,43 @@ class UserConfig {
 			options="Yes, No",
 			order=userConfig.order++ />
 		bloom="No";
+
+	</ label=userConfig.prefix + "OSD" + userConfig.postfix,
+		help="On Screen Display used to select games.",
+		order=userConfig.order++ />
+	osd="";
+
+		</ label="Effect Type",
+			help="Effect type when the OSD disappears.",
+			options="collapse, compress, fade, shrink, disappear",
+			order=userConfig.order++ />
+		osdEffectType="disappear";
+
+		</ label="Effect Delay",
+			help="Delay (ms) when the OSD disappears.",
+			order=userConfig.order++ />
+		osdEffectDelay="2000";
+
+		</ label="Effect Duration",
+			help="Effect duration (ms) when the OSD disappears.",
+			order=userConfig.order++ />
+		osdEffectDuration="200";
+
+	</ label=userConfig.prefix + "CYCLE" + userConfig.postfix,
+		help="Cycle changes the selection after a period of inactivity.",
+		order=userConfig.order++ />
+	cycle="";
+
+		</ label="Enable",
+			help="Enable Cycle.",
+			options="Yes, No",
+			order=userConfig.order++ />
+		cycleEnabled="Yes";
+
+		</ label="Delay",
+			help="Delay (ms) when a new game is selected. Video length takes precedence.",
+			order=userConfig.order++ />
+		cycleDelay="60000";
 }
 local userConfig = fe.get_config();
 
@@ -504,15 +520,35 @@ function transitions(ttype, var, ttime) {
 fe.add_transition_callback("transitions");
 
 // --------------------
+// Chronometer
+// --------------------
+
+class Chronometer {
+	clock = {
+		current = 0,
+		signal = 0,
+	}
+
+	constructor() {
+		fe.add_ticks_callback(this, "current");
+		fe.add_transition_callback(this, "signal");
+	}
+
+	function current(ttime) {
+		clock.current = ttime;
+	}
+
+	function signal(ttype, var, ttime) {
+		clock.signal = clock.current;
+		return false;
+	}
+}
+
+// --------------------
 // OSD
 // --------------------
 
-class OSD {
-	clock = {
-		current = 0,
-		delay = null,
-		signal = 0,
-	};
+class OSD extends Chronometer {
 	object = null;
 	properties = {
 		x = null,
@@ -522,6 +558,7 @@ class OSD {
 		alpha = null,
 	};
 	effect = {
+		delay = null,
 		duration = null,
 		type = [
 			"collapse",
@@ -532,16 +569,8 @@ class OSD {
 		],
 	};
 
-	constructor(obj, cd=2000, et="disappear", ed=200) {
-		// ----- clock.delay -----
-		try {
-			clock.delay = cd.tointeger();
-			assert(clock.delay >= 1);
-		}
-		catch(e) {
-			printL("ERROR in PICKnMIX Layout: OSD - improper delay time, switching to default value");
-			clock.delay = 2000;
-		}
+	constructor(obj, t="disappear", de=2000, du=200) {
+		base.constructor();
 
 		// ----- object and properties -----
 		object = obj;
@@ -556,17 +585,27 @@ class OSD {
 
 		// ----- effect.type -----
 		try {
-			assert(effect.type.find(strip(et)) != null);
-			effect.type = strip(et);
+			assert(effect.type.find(strip(t)) != null);
+			effect.type = strip(t);
 		}
 		catch (e) {
-			printL("ERROR in PICKnMIX Layout: OSD - improper effect, switching to default value");
+			printL("ERROR in PICKnMIX Layout: OSD - improper effect type, switching to default value");
 			effect.type = "disappear";
+		}
+
+		// ----- effect.delay -----
+		try {
+			effect.delay <- de.tointeger();
+			assert(effect.delay >= 1);
+		}
+		catch(e) {
+			printL("ERROR in PICKnMIX Layout: OSD - improper effect delay time, switching to default value");
+			effect.delay <- 2000;
 		}
 
 		// ----- effect.duration -----
 		try {
-			effect.duration = ed.tointeger();
+			effect.duration = du.tointeger();
 			assert(effect.duration >= 1);
 		}
 		catch(e) {
@@ -574,20 +613,15 @@ class OSD {
 			effect.duration = 200;
 		}
 
-		// ----- callbacks and handlers -----
+		// ----- Callbacks and Handlers -----
 		fe.add_ticks_callback(this, "ticks");
-		fe.add_transition_callback(this, "transitions");
 		fe.add_signal_handler(this, "signals");
 	}
 
 	// ----- Ticks Callback -----
-
 	function ticks(ttime) {
-		// Current Time (accessible from transitions)
-		clock.current = ttime;
-
 		// Engage
-		if (clock.current >= clock.signal+clock.delay && clock.current <= clock.signal+clock.delay+effect.duration) {
+		if (clock.current >= clock.signal+effect.delay && clock.current <= clock.signal+effect.delay+effect.duration) {
 			switch (effect.type) {
 				case "collapse":
 					collapse();
@@ -607,18 +641,10 @@ class OSD {
 					break;
 			}
 		}
-		if (clock.current > clock.signal+clock.delay+effect.duration) disappear(); // Disappear if effect did not finish
-	}
-
-	// ----- Transition Callback -----
-
-	function transitions(ttype, var, ttime) {
-		clock.signal = clock.current;
-		return false;
+		if (clock.current > clock.signal+effect.delay+effect.duration) disappear(); // Disappear if effect did not finish
 	}
 
 	// ----- Signals Handler -----
-
 	function signals(signal_str) {
 		switch (signal_str) {
 			case "prev_game":
@@ -643,45 +669,39 @@ class OSD {
 	}
 
 	// ----- Collapse -----
-
 	function collapse() {
-		object.height = properties.height-properties.height*(clock.current-clock.signal-clock.delay)/effect.duration;
-		object.y = properties.y+properties.height*(clock.current-clock.signal-clock.delay)/effect.duration/2;
+		object.height = properties.height-properties.height*(clock.current-clock.signal-effect.delay)/effect.duration;
+		object.y = properties.y+properties.height*(clock.current-clock.signal-effect.delay)/effect.duration/2;
 	}
 
 	// ----- Compress -----
-
 	function compress() {
-		object.height = properties.height-properties.height*(clock.current-clock.signal-clock.delay)/effect.duration;
-		object.y = properties.y+properties.height*(clock.current-clock.signal-clock.delay)/effect.duration/2;
-		object.width = properties.width-properties.height*(clock.current-clock.signal-clock.delay)/effect.duration;
-		object.x = properties.x+properties.width*(clock.current-clock.signal-clock.delay)/effect.duration/3;
+		object.height = properties.height-properties.height*(clock.current-clock.signal-effect.delay)/effect.duration;
+		object.y = properties.y+properties.height*(clock.current-clock.signal-effect.delay)/effect.duration/2;
+		object.width = properties.width-properties.height*(clock.current-clock.signal-effect.delay)/effect.duration;
+		object.x = properties.x+properties.width*(clock.current-clock.signal-effect.delay)/effect.duration/3;
 	}
 
 
 	// ----- Fade -----
-
 	function fade() {
-		object.alpha = -255*(clock.current-clock.signal-clock.delay)/effect.duration;
+		object.alpha = -255*(clock.current-clock.signal-effect.delay)/effect.duration;
 	}
 
 	// ----- Shrink -----
-
 	function shrink() {
-		object.height = properties.height-properties.height*(clock.current-clock.signal-clock.delay)/effect.duration;
-		object.y = properties.y+properties.height*(clock.current-clock.signal-clock.delay)/effect.duration/2;
-		object.width = properties.width-properties.width*(clock.current-clock.signal-clock.delay)/effect.duration;
-		object.x = properties.x+properties.width*(clock.current-clock.signal-clock.delay)/effect.duration/2;
+		object.height = properties.height-properties.height*(clock.current-clock.signal-effect.delay)/effect.duration;
+		object.y = properties.y+properties.height*(clock.current-clock.signal-effect.delay)/effect.duration/2;
+		object.width = properties.width-properties.width*(clock.current-clock.signal-effect.delay)/effect.duration;
+		object.x = properties.x+properties.width*(clock.current-clock.signal-effect.delay)/effect.duration/2;
 	}
 
 	// ----- Disappear -----
-
 	function disappear() {
 		object.visible = false;
 	}
 
 	// ----- Restore -----
-
 	function restore() {
 		object.x = properties.x;
 		object.y = properties.y;
@@ -691,51 +711,47 @@ class OSD {
 		object.alpha = properties.alpha;
 	}
 }
-OSD(menu, userConfig.osdClockDelay, userConfig.osdEffectType);
+OSD(menu, userConfig.osdEffectType, userConfig.osdEffectDelay);
 
 // --------------------
 // Cycle
 // --------------------
 
-class Cycle {
+class Cycle extends Chronometer {
 	object = null;
-	clock = {
-		current = 0,
-		signal = 0,
-		delay = 60000,
-	};
+	delay = null;
 
-	constructor(obj) {
+	constructor(obj, de) {
+		base.constructor();
+
+		// ----- object -----
 		object = obj;
 
+		// ----- delay -----
+		try {
+			delay = de.tointeger();
+			assert(delay >= 1);
+		}
+		catch(e) {
+			printL("ERROR in PICKnMIX Layout: Cycle - improper delay time, switching to default value");
+			delay = 60000;
+		}
+
+		// ----- Callbacks and Handlers -----
 		fe.add_ticks_callback(this, "ticks");
-		fe.add_transition_callback(this, "transitions");
 	}
 
 	// ----- Ticks Callback -----
-
 	function ticks(ttime) {
-		// Current Time (accessible from transitions)
-		clock.current = ttime;
-
-		// Engage
 		if (object.video_duration == 0) { // Object is an image or not drawn yet
-			if (clock.current >= clock.signal+clock.delay) next();
+			if (clock.current >= clock.signal+delay) next();
 		}
 	 	else if (clock.current >= clock.signal+object.video_duration) next(); // Object is a video
 	}
 
-	// ----- Transition Callback -----
-
-	function transitions(ttype, var, ttime) {
-		clock.signal = clock.current;
-		return false;
-	}
-
 	// ----- Next -----
-
 	function next() {
 		fe.list.index = randInt(fe.list.size-1);
 	}
 }
-Cycle(video);
+if (toBool(userConfig["cycleEnabled"])) Cycle(video, userConfig["cycleDelay"]);
