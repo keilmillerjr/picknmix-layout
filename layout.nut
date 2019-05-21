@@ -76,6 +76,12 @@ class UserConfig {
 		order=userConfig.order++ />
 	osd="";
 
+		</ label="Color",
+			help="Color of the OSD border and favorite rom.",
+			options="blue, bronze, green, yellow",
+			order=userConfig.order++ />
+		osdColor="bronze";
+
 		</ label="Effect Type",
 			help="Effect type when the OSD disappears.",
 			options="collapse, compress, fade, shrink, disappear",
@@ -162,189 +168,206 @@ config.logo <- {
 	config.logo.width <- matchAspect(16, 7, "h", config.logo.height); // Aspect based on average size of 400x175
 	config.logo.x <- config.container.width-config.logo.padding*1.5-config.logo.width;
 
-// ---------- Menu
+// ---------- OSD
 
-config.menu <- {
+config.osd <- {};
+
+config.osd.color <- {
+	blue = [66, 98, 174],
+	bronze = [159, 143, 99],
+	green = [22, 158, 25],
+	yellow = [224, 244, 0],
+}
+	try {
+		assert(config.osd.color.rawin(strip(userConfig["osdColor"])) == true);
+		config.osd.color = config.osd.color.rawget(strip(userConfig["osdColor"]));
+	}
+	catch (e) {
+		printL("ERROR in PICKnMIX Layout: OSD - improper color, switching to default value");
+		config.osd.color = config.osd.color.yellow;
+	}
+
+config.osd.surface <- {
 	width = per(76, config.container.width),
 	height = per(64, config.container.height),
 };
-	config.menu.x <- config.container.width/2-config.menu.width/2;
-	config.menu.y <- config.container.height/2-config.menu.height/2;;
+	config.osd.surface.x <- config.container.width/2-config.osd.surface.width/2;
+	config.osd.surface.y <- config.container.height/2-config.osd.surface.height/2;;
 
-config.menuBorder <- {
+config.osd.border <- {
 	x = 0,
 	y = 0,
-	width = config.menu.width,
-	height = config.menu.height,
+	width = config.osd.surface.width,
+	height = config.osd.surface.height,
 	file_name = pixelPath,
-	rgb = [224, 244, 0],
+	rgb = config.osd.color,
 };
 
-config.menuBackground <- {
-	x = per(1, config.menu.width),
-	y = per(1, config.menu.width),
-	width = per(98, config.menu.width),
-	height = config.menu.height-per(2, config.menu.width),
+config.osd.background <- {
+	x = per(1, config.osd.surface.width),
+	y = per(1, config.osd.surface.width),
+	width = per(98, config.osd.surface.width),
+	height = config.osd.surface.height-per(2, config.osd.surface.width),
 	file_name = pixelPath,
 	rgb = [16, 16, 16],
 };
 
-config.menuRows <- {
-	padding = per(3, config.menu.width),
+config.osd.rows <- {
+	padding = per(3, config.osd.surface.width),
 };
-	config.menuRows.rowWidth <- config.menu.width-config.menuRows.padding*2;
-	config.menuRows.rowHeight <- (config.menu.height-config.menuRows.padding*2)/14;
+	config.osd.rows.width <- config.osd.surface.width-config.osd.rows.padding*2;
+	config.osd.rows.height <- (config.osd.surface.height-config.osd.rows.padding*2)/14;
 
-config.menuSelectedTop <- {
-	x = config.menuRows.padding,
-	width = config.menuRows.rowWidth,
-	height = per(0.66, config.menu.width),
+config.osd.topLine <- {
+	x = config.osd.rows.padding,
+	width = config.osd.rows.width,
+	height = per(0.66, config.osd.surface.width),
 	file_name = pixelPath,
 	rgb = [224, 224, 224],
 };
-	config.menuSelectedTop.y <- config.menuRows.padding+config.menuRows.rowHeight*5.5-config.menuSelectedTop.height/2,
+	config.osd.topLine.y <- config.osd.rows.padding+config.osd.rows.height*5.5-config.osd.topLine.height/2,
 
-config.menuSelectedBottom <- {
-	x = config.menuRows.padding,
-	width = config.menuRows.rowWidth,
-	height = per(0.66, config.menu.width),
+config.osd.bottomLine <- {
+	x = config.osd.rows.padding,
+	width = config.osd.rows.width,
+	height = per(0.66, config.osd.surface.width),
 	file_name = pixelPath,
 	rgb = [224, 224, 224],
 };
-	config.menuSelectedBottom.y <- config.menuRows.padding+config.menuRows.rowHeight*8.5-config.menuSelectedBottom.height/2,
+	config.osd.bottomLine.y <- config.osd.rows.padding+config.osd.rows.height*8.5-config.osd.bottomLine.height/2,
 
 
-// ---------- Menu Title
+// ---------- OSD Title
 
-config.title <- [];
+config.osd.title <- [];
 	for (local i=0; i<13; i++) {
-		config.title.push("");
+		config.osd.title.push("");
 	}
 
-config.title[0] = {
-	x = config.menuRows.padding,
-	y = config.menuRows.padding,
-	width = config.menuRows.rowWidth,
-	height = config.menuRows.rowHeight,
+config.osd.title[0] = {
+	x = config.osd.rows.padding,
+	y = config.osd.rows.padding,
+	width = config.osd.rows.width,
+	height = config.osd.rows.height,
 	rgb = [40, 40, 40],
 	align = Align.MiddleCentre,
 };
 
-config.title[1] = {
-	x = config.menuRows.padding,
-	y = config.menuRows.padding+config.menuRows.rowHeight,
-	width = config.menuRows.rowWidth,
-	height = config.menuRows.rowHeight,
+config.osd.title[1] = {
+	x = config.osd.rows.padding,
+	y = config.osd.rows.padding+config.osd.rows.height,
+	width = config.osd.rows.width,
+	height = config.osd.rows.height,
 	rgb = [56, 56, 56],
 	bg_rgb = [24, 24, 24],
 	align = Align.MiddleCentre,
 };
 
-config.title[2] = {
-	x = config.menuRows.padding,
-	y = config.menuRows.padding+config.menuRows.rowHeight*2,
-	width = config.menuRows.rowWidth,
-	height = config.menuRows.rowHeight,
+config.osd.title[2] = {
+	x = config.osd.rows.padding,
+	y = config.osd.rows.padding+config.osd.rows.height*2,
+	width = config.osd.rows.width,
+	height = config.osd.rows.height,
 	rgb = [80, 80, 80],
 	bg_rgb = [32, 32, 32],
 	align = Align.MiddleCentre,
 };
 
-config.title[3] = {
-	x = config.menuRows.padding,
-	y = config.menuRows.padding+config.menuRows.rowHeight*3,
-	width = config.menuRows.rowWidth,
-	height = config.menuRows.rowHeight,
+config.osd.title[3] = {
+	x = config.osd.rows.padding,
+	y = config.osd.rows.padding+config.osd.rows.height*3,
+	width = config.osd.rows.width,
+	height = config.osd.rows.height,
 	rgb = [96, 96, 96],
 	bg_rgb = [40, 40, 40],
 	align = Align.MiddleCentre,
 };
 
-config.title[4] = {
-	x = config.menuRows.padding,
-	y = config.menuRows.padding+config.menuRows.rowHeight*4,
-	width = config.menuRows.rowWidth,
-	height = config.menuRows.rowHeight,
+config.osd.title[4] = {
+	x = config.osd.rows.padding,
+	y = config.osd.rows.padding+config.osd.rows.height*4,
+	width = config.osd.rows.width,
+	height = config.osd.rows.height,
 	rgb = [96, 96, 96],
 	bg_rgb = [40, 40, 40],
 	align = Align.MiddleCentre,
 };
 
-config.title[5] = {
-	x = config.menuRows.padding,
-	y = config.menuRows.padding+config.menuRows.rowHeight*6,
-	width = config.menuRows.rowWidth,
-	height = config.menuRows.rowHeight*2,
+config.osd.title[5] = {
+	x = config.osd.rows.padding,
+	y = config.osd.rows.padding+config.osd.rows.height*6,
+	width = config.osd.rows.width,
+	height = config.osd.rows.height*2,
 	rgb = [224, 224, 224],
 	align = Align.MiddleCentre,
 };
 
-config.title[6] = {
-	x = config.menuRows.padding,
-	y = config.menuRows.padding+config.menuRows.rowHeight*9,
-	width = config.menuRows.rowWidth,
-	height = config.menuRows.rowHeight,
+config.osd.title[6] = {
+	x = config.osd.rows.padding,
+	y = config.osd.rows.padding+config.osd.rows.height*9,
+	width = config.osd.rows.width,
+	height = config.osd.rows.height,
 	rgb = [96, 96, 96],
 	bg_rgb = [40, 40, 40],
 };
 
-config.title[7] = {
-	x = config.menuRows.padding,
-	y = config.menuRows.padding+config.menuRows.rowHeight*10,
-	width = config.menuRows.rowWidth,
-	height = config.menuRows.rowHeight,
+config.osd.title[7] = {
+	x = config.osd.rows.padding,
+	y = config.osd.rows.padding+config.osd.rows.height*10,
+	width = config.osd.rows.width,
+	height = config.osd.rows.height,
 	rgb = [96, 96, 96],
 	bg_rgb = [40, 40, 40],
 	align = Align.MiddleCentre,
 };
 
-config.title[8] = {
-	x = config.menuRows.padding,
-	y = config.menuRows.padding+config.menuRows.rowHeight*11,
-	width = config.menuRows.rowWidth,
-	height = config.menuRows.rowHeight,
+config.osd.title[8] = {
+	x = config.osd.rows.padding,
+	y = config.osd.rows.padding+config.osd.rows.height*11,
+	width = config.osd.rows.width,
+	height = config.osd.rows.height,
 	rgb = [80, 80, 80],
 	bg_rgb = [32, 32, 32],
 	align = Align.MiddleCentre,
 };
 
-config.title[9] = {
-	x = config.menuRows.padding,
-	y = config.menuRows.padding+config.menuRows.rowHeight*12,
-	width = config.menuRows.rowWidth,
-	height = config.menuRows.rowHeight,
+config.osd.title[9] = {
+	x = config.osd.rows.padding,
+	y = config.osd.rows.padding+config.osd.rows.height*12,
+	width = config.osd.rows.width,
+	height = config.osd.rows.height,
 	rgb = [56, 56, 56],
 	bg_rgb = [24, 24, 24],
 	align = Align.MiddleCentre,
 };
 
-config.title[10] = {
-	x = config.menuRows.padding,
-	y = config.menuRows.padding+config.menuRows.rowHeight*13,
-	width = config.menuRows.rowWidth,
-	height = config.menuRows.rowHeight,
+config.osd.title[10] = {
+	x = config.osd.rows.padding,
+	y = config.osd.rows.padding+config.osd.rows.height*13,
+	width = config.osd.rows.width,
+	height = config.osd.rows.height,
 	rgb = [40, 40, 40],
 	align = Align.MiddleCentre,
 };
 
-// ---------- Menu Group
+// ---------- OSD Group
 
-config.platform <- {
-	x = config.menuRows.padding,
-	y = config.menuRows.padding,
-	width = config.menuRows.rowWidth,
-	height = config.menuRows.rowHeight,
+config.osd.platform<- {
+	x = config.osd.rows.padding,
+	y = config.osd.rows.padding,
+	width = config.osd.rows.width,
+	height = config.osd.rows.height,
 	rgb = [224, 224, 224],
 	bg_rgb = [16, 16, 16],
 	align = Align.TopLeft,
 	margin = 0,
 };
 
-config.filter <- {
-	x = config.menuRows.padding,
-	y = config.menuRows.padding+config.menuRows.rowHeight*13,
-	width = config.menuRows.rowWidth,
-	height = config.menuRows.rowHeight,
+config.osd.filter <- {
+	x = config.osd.rows.padding,
+	y = config.osd.rows.padding+config.osd.rows.height*13,
+	width = config.osd.rows.width,
+	height = config.osd.rows.height,
 	msg = "[FilterName]",
 	rgb = [224, 224, 224],
 	bg_rgb = [16, 16, 16],
@@ -411,34 +434,36 @@ local logo = PreserveLogo(userConfig["logoLabel"], config.logo.x, config.logo.y,
 	logo.set_fit_or_fill("fit");
 	logo.set_anchor(::Anchor.Bottom);
 
-// ---------- Menu
+// ---------- OSD
 
-local menu = container.add_surface(config.menu.width, config.menu.height);
-	setProps(menu, config.menu);
+local osd = {};
 
-local menuBorder = menu.add_image(pixelPath);
-	setProps(menuBorder, config.menuBorder);
+osd.surface <- container.add_surface(config.osd.surface.width, config.osd.surface.height);
+	setProps(osd.surface, config.osd.surface);
 
-local menuBackground = menu.add_image(pixelPath);
-	setProps(menuBackground, config.menuBackground);
+osd.border <- osd.surface.add_image(pixelPath);
+	setProps(osd.border, config.osd.border);
 
-local menuSelectedTop = menu.add_image(pixelPath);
-	setProps(menuSelectedTop, config.menuSelectedTop);
+osd.background <- osd.surface.add_image(pixelPath);
+	setProps(osd.background, config.osd.background);
 
-local menuSelectedBottom = menu.add_image(pixelPath);
-	setProps(menuSelectedBottom, config.menuSelectedBottom);
+osd.topLine <- osd.surface.add_image(pixelPath);
+	setProps(osd.topLine, config.osd.topLine);
 
-local title = [];
+osd.bottomLine <- osd.surface.add_image(pixelPath);
+	setProps(osd.bottomLine, config.osd.bottomLine);
+
+osd.title <- [];
 	for (local i=0; i<11; i++) {
-		title.push(menu.add_text("", -1, -1, 1, 1));
-		setProps(title[i], config.title[i]);
+		osd.title.push(osd.surface.add_text("", -1, -1, 1, 1));
+		setProps(osd.title[i], config.osd.title[i]);
 	}
 
-local platform = menu.add_text("", -1, -1, 1, 1);
-	setProps(platform, config.platform);
+osd.platform <- osd.surface.add_text("", -1, -1, 1, 1);
+	setProps(osd.platform, config.osd.platform);
 
-local filter = menu.add_text("", -1, -1, 1, 1);
-	setProps(filter, config.filter);
+osd.filter <- osd.surface.add_text("", -1, -1, 1, 1);
+	setProps(osd.filter, config.osd.filter);
 
 // --------------------
 // Shaders
@@ -471,26 +496,26 @@ function transitions(ttype, var, ttime) {
 	switch (ttype) {
 		case Transition.ToNewList:
 			// ---------- Platform Transition
-			platform.msg = formatPlatform();
-			testText.height = config.platform.height;
-			testText.msg = platform.msg;
-			local platformCharWidth = testText.msg_width;;
-			if (platformCharWidth < config.platform.width) {
-				platform.width = platformCharWidth;
+			osd.platform.msg = formatPlatform();
+			testText.height = config.osd.platform.height;
+			testText.msg = osd.platform.msg;
+			local osdPlatformCharWidth = testText.msg_width;;
+			if (osdPlatformCharWidth < config.osd.platform.width) {
+				osd.platform.width = osdPlatformCharWidth;
 			}
-			else platform.width = config.platform.width;
+			else osd.platform.width = config.osd.platform.width;
 
 			// ---------- Filter Transition
-			testText.height = config.filter.height;
-			testText.msg = filter.msg;
-			local filterCharWidth = testText.msg_width;
-			if (filterCharWidth < config.filter.width) {
-				filter.width = filterCharWidth;
-				filter.x = config.filter.x+config.filter.width-filter.width;
+			testText.height = config.osd.filter.height;
+			testText.msg = osd.filter.msg;
+			local osdFilterCharWidth = testText.msg_width;
+			if (osdFilterCharWidth < config.osd.filter.width) {
+				osd.filter.width = osdFilterCharWidth;
+				osd.filter.x = config.osd.filter.x+config.osd.filter.width-osd.filter.width;
 			}
 			else {
-				filter.width = config.filter.width;
-				filter.x = config.filter.x;
+				osd.filter.width = config.osd.filter.width;
+				osd.filter.x = config.osd.filter.x;
 			}
 			break;
 	}
@@ -501,18 +526,18 @@ function transitions(ttype, var, ttime) {
 		case Transition.FromOldSelection:
 		case Transition.ToNewList:
 		case Transition.ChangedTag:
-			title[0].msg = formatTitle(-5);
-			title[1].msg = formatTitle(-4);
-			title[2].msg = formatTitle(-3);
-			title[3].msg = formatTitle(-2);
-			title[4].msg = formatTitle(-1);
-			title[5].msg = formatTitle();
-				fe.game_info(Info.Favourite) == "1" ? title[5].set_rgb(224, 244, 0) : title[5].set_rgb(224, 224, 224);
-			title[6].msg = formatTitle(1);
-			title[7].msg = formatTitle(2);
-			title[8].msg = formatTitle(3);
-			title[9].msg = formatTitle(4);
-			title[10].msg = formatTitle(5);
+			osd.title[0].msg = formatTitle(-5);
+			osd.title[1].msg = formatTitle(-4);
+			osd.title[2].msg = formatTitle(-3);
+			osd.title[3].msg = formatTitle(-2);
+			osd.title[4].msg = formatTitle(-1);
+			osd.title[5].msg = formatTitle();
+				fe.game_info(Info.Favourite) == "1" ? osd.title[5].set_rgb(config.osd.color[0]*0.8, config.osd.color[1]*0.8, config.osd.color[2]*0.8) : osd.title[5].set_rgb(224, 224, 224);
+			osd.title[6].msg = formatTitle(1);
+			osd.title[7].msg = formatTitle(2);
+			osd.title[8].msg = formatTitle(3);
+			osd.title[9].msg = formatTitle(4);
+			osd.title[10].msg = formatTitle(5);
 			break;
 	}
 	return false;
@@ -711,7 +736,7 @@ class OSD extends Chronometer {
 		object.alpha = properties.alpha;
 	}
 }
-OSD(menu, userConfig.osdEffectType, userConfig.osdEffectDelay);
+OSD(osd.surface, userConfig.osdEffectType, userConfig.osdEffectDelay);
 
 // --------------------
 // Cycle
